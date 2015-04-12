@@ -1,5 +1,4 @@
-# https_express_example
-the bare minimum to serve https pages with express
+# javascript computer vision https livereload + browserify
 
 run `npm install` to install express
 
@@ -37,4 +36,4 @@ Email Address []:
 
 _In OSX_ If you then type `open nginx.crt` and click "Always Trust", then everything should work without the warning prompts.
 
-Finally run the server `node main.js`.
+Finally run the server `npm start; npm run livereload`.
