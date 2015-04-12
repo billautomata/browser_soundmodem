@@ -1,0 +1,33 @@
+<html>
+
+<head>
+
+  <script type="text/javascript" src="/vendor/jquery.min.js"></script>
+  <script type="text/javascript" src="/vendor/jsfeat-min.js"></script>
+  <script type="text/javascript" src="/vendor/compatibility.js"></script>
+  <script type="text/javascript" src="/vendor/profiler.js"></script>
+  <script type="text/javascript" src="/vendor/dat.gui.min.js"></script>
+
+</head>
+
+<body>
+
+  <!-- <video id="webcam" width="640" height="480"></video> -->
+  <video id="webcam" width="560" height="320" src='small.mp4' autoplay loop muted style="display:none;"></video>
+
+  <div style=" width:640px;height:480px;">
+    <canvas id="canvas" width="560" height="320"></canvas>
+    <canvas id="canvas_smaller" width="35" height="20" style='width:560px; height:320px; image-rendering: pixelated;'></canvas>
+    <canvas id="canvas_smallest" width="56" height="32" style='width:560px; height:320px; image-rendering: pixelated;'></canvas>
+    <div id="no_rtc" class="alert alert-error" style="display:none;"></div>
+  </div>
+
+</body>
+
+<script>console.log(Date.now())</script>
+
+<script type='text/javascript' src='build/bundle.js'></script>
+<script src='https://localhost:9000/livereload.js'></script>
+
+
+</html>
