@@ -5,7 +5,11 @@ module.exports = {
   check_peak_ranges: check_peak_ranges,
   group_peak_ranges: group_peak_ranges,
   set_gain: set_gain,
-  validate_ranges: validate_ranges
+  validate_ranges: validate_ranges,
+  n_channels: n_channels,
+  get_groups: get_groups,
+  encode_range: encode_range,
+  get_encoded_byte_array: get_encoded_byte_array
 }
 
 // check for global audio ctx
@@ -25,7 +29,7 @@ var grouped_peak_ranges
 var osc_bank = []
 var gain_bank = []
 
-var n_osc = 3
+var n_osc = 8
 var freqRange = 18000
 var spread = (freqRange / n_osc)
 var initialFreq = 1000
@@ -47,7 +51,7 @@ function init(){
     local_osc.connect(local_gain)
     local_gain.connect(analyser)
 
-    // local_gain.connect(context.destination)
+    local_gain.connect(context.destination)
 
     local_osc.start()
 
@@ -61,9 +65,19 @@ function init(){
   bufferLength = analyser.frequencyBinCount
   analyserDataArray = new Uint8Array(bufferLength)
 
-  setTimeout(register_peak_ranges,100)
+  setTimeout(register_peak_ranges,200)
 
 }
+
+function n_channels(){
+  return n_osc
+}
+
+function get_groups(){
+  return grouped_peak_ranges
+}
+
+
 
 function getBuffer(){
   analyser.getByteFrequencyData(analyserDataArray)
@@ -164,10 +178,15 @@ function group_peak_ranges(){
 }
 
 function set_gain(channel, value){
+  // channel = (n_osc-1) - channel
   gain_bank[channel].gain.value = value
 }
 
 function validate_ranges(){
+
+  if(grouped_peak_ranges === undefined){
+    return;
+  }
 
   getBuffer()
 
@@ -184,7 +203,7 @@ function validate_ranges(){
       }
     })
 
-    console.log(hits)
+    // console.log(hits)
 
     if(hits >= group.length/2){
       valid_groups.push(true)
@@ -196,4 +215,31 @@ function validate_ranges(){
 
   return valid_groups
 
+}
+
+
+function encode_range(byte){
+
+  var chars = get_encoded_byte_array(byte)
+
+  // console.log(chars)
+
+  chars.forEach(function(c,idx){
+    if(c === '0'){
+      set_gain(idx,0)
+    } else {
+      set_gain(idx,1/n_osc)
+    }
+  })
+
+}
+
+function get_encoded_byte_array(byte){
+  return pad(byte.toString(2),8).split('')
+}
+
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 }

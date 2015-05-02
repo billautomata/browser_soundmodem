@@ -8,7 +8,7 @@ window.onload = function () {
   var bufferLength = dataArray.length
 
   var WIDTH = 1024
-  var HEIGHT = 768
+  var HEIGHT = 256
 
   window.d = dataArray
   window.draw = draw
@@ -20,6 +20,8 @@ window.onload = function () {
   var mod = 0.0
   var counter = 0
   var i
+
+  window.byte_to_code = 1
 
   var svg = d3.select('div#container').append('svg')
     .attr('width',WIDTH)
@@ -33,61 +35,85 @@ window.onload = function () {
       .attr('width', barWidth)
       .attr('height', 0)
 
+    let bar_idx = svgbars
+    bar.on('mouseover', function(){
+      console.log(bar_idx)
+    })
+
     bars.push(bar)
   }
 
+  var prev_ranges = []
+
   function draw() {
 
-
-    // if(mod === 0.0){
-    //   mod = 0.5
-    // } else {
-    //   mod = 0.0
-    // }
-
-    // gainNode.gain.value = mod
-
-    // var random_bank = Math.floor(Math.random()*gain_bank.length)
-    // gain_bank[2].gain.value = 0
-
-
-    // analyser.getByteTimeDomainData(dataArray);
-    // dataArray = alice.getBuffer()
-    // window.d = dataArray
-    // // analyser.getFloatFrequencyData(dataArray)
-    //
-    // var total = 0
-    // for(i=0;i<bufferLength;i++){
-    //   // dataArraySlope[i] = dataArray[i] - dataArray[i+1]
-    //   total += dataArray[i]
-    // }
-    //
-    // var avg = total / (bufferLength)
-    //
-    // var count_peaks = 0
-    // var peaks = []
-    //
-    // var threshold = 2
-    // var minValue = threshold * avg
-    //
     counter++
-    if(counter % 60 === 1){
+    if(counter % 5 === 0){
 
+      // console.clear()
 
       alice.getBuffer()
-      // console.log('peak ranges (grouped)')
-      // var peak_ranges = alice.group_peak_ranges()
-      //
-      // if(peak_ranges){
-      //   console.log(peak_ranges)
-      //   console.log(peak_ranges.length)
-      // }
-
-      // console.log(alice.group_peak_ranges())
-
       for(i=0;i<bufferLength;i++){
-        bars[i].attr('height', dataArray[i] * 2)
+        bars[i].attr('height', dataArray[i])
       }
+
+      // does the encoded byte match?
+
+
+      var ranges = alice.validate_ranges()
+      var test_byte = alice.get_encoded_byte_array(window.byte_to_code)
+
+      var no_misses = true
+      ranges.forEach(function(range,range_idx){
+
+        if((range === true && test_byte[range_idx] === '1') ||
+          (range === false && test_byte[range_idx] === '0')){
+          } else {
+            no_misses = false
+            console.log('miss...')
+          }
+
+        // console.log(range, test_byte[range_idx])
+      })
+
+      if(no_misses){
+        window.byte_to_code += 1
+        console.log(window.byte_to_code)
+
+        window.byte_to_code = window.byte_to_code % 255
+      }
+
+
+
+      alice.encode_range(window.byte_to_code)
+
+
+      // console.log(ranges)
+      // if(ranges[channel_to_check] === false){
+      //   channel_to_check += 1
+      //   channel_to_check = channel_to_check % alice.n_channels()
+      // }
+      //
+      // for(var i = 0; i < alice.n_channels(); i++){
+      //   if(i === channel_to_check){
+      //     // console.log('here'+i)
+      //     alice.set_gain(i,0.0)
+      //   } else {
+      //     alice.set_gain(i,1.0/alice.n_channels())
+      //   }
+      // }
+      //
+      // var all_matched = true
+      // ranges.forEach(function(v,i){
+      //   if(v !== prev_ranges[i]){
+      //     all_matched = false
+      //   }
+      // })
+      // if(all_matched){
+      //   console.log('MISS')
+      // }
+      //
+      // prev_ranges = ranges
 
     }
 
@@ -95,7 +121,8 @@ window.onload = function () {
 
   }
 
-  draw()
+  setTimeout(draw,500)
+  // draw()
 
 
 }
