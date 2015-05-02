@@ -3,14 +3,28 @@ window.onload = function () {
 
   console.log('main.js / window.onload anonymous function')
 
-  window.alice = require('./agent.js')
+
+  var Agent = require('./agent.js')
+  // return;
+
+  window.alice = Agent.agent()
+  alice.init('alice')
+
+  window.bob = Agent.agent()
+  bob.init('bob')
+
+  alice.connect(bob)
+  bob.connect(alice)
+
+  // return;
+
   var dataArray = alice.getBuffer()
   var bufferLength = dataArray.length
 
   var WIDTH = 1024
   var HEIGHT = 256
 
-  window.d = dataArray
+  // window.d = dataArray
   window.draw = draw
 
   var barWidth = (WIDTH / bufferLength);
@@ -23,6 +37,7 @@ window.onload = function () {
 
   window.byte_to_code = 1
 
+  // create svg
   var svg = d3.select('div#container').append('svg')
     .attr('width',WIDTH)
     .attr('height', HEIGHT)
@@ -48,44 +63,55 @@ window.onload = function () {
   function draw() {
 
     counter++
-    if(counter % 5 === 0){
+    if(counter % 10 === 1){
 
-      // console.clear()
+      console.clear()
+      console.log(Date.now())
 
       alice.getBuffer()
       for(i=0;i<bufferLength;i++){
         bars[i].attr('height', dataArray[i])
       }
 
+      console.log('here')
+
       // does the encoded byte match?
+      var current_signal_byte = alice.read_byte_from_signal()
+      console.log('current signal byte ' + current_signal_byte)
+
+      // return true;
+
+      // if(current_signal_byte === window.byte_to_code){
+      //   window.byte_to_code += 1
+      //   console.log(window.byte_to_code)
+      //   window.byte_to_code = window.byte_to_code % 255
+      // } else {
+      //   console.log('too slow!')
+      // }
 
 
-      var ranges = alice.validate_ranges()
-      var test_byte = alice.get_encoded_byte_array(window.byte_to_code)
-
-      var no_misses = true
-      ranges.forEach(function(range,range_idx){
-
-        if((range === true && test_byte[range_idx] === '1') ||
-          (range === false && test_byte[range_idx] === '0')){
-          } else {
-            no_misses = false
-            console.log('miss...')
-          }
-
-        // console.log(range, test_byte[range_idx])
-      })
-
-      if(no_misses){
-        window.byte_to_code += 1
-        console.log(window.byte_to_code)
-
-        window.byte_to_code = window.byte_to_code % 255
-      }
+      // var ranges = alice.validate_ranges()
+      // var test_byte = alice.get_encoded_byte_array(window.byte_to_code)
+      //
+      // var no_misses = true
+      // for(var i = 0; i < 8; i++){
+      //   if((ranges[i] === true && test_byte[i] === '1') ||
+      //     (ranges[i] === false && test_byte[i] === '0')){
+      //       // do nothing
+      //     } else {
+      //       no_misses = false
+      //       console.log('miss')
+      //     }
+      //
+      //
+      // }
+      //
+      // if(no_misses){
+      // }
 
 
-
-      alice.encode_range(window.byte_to_code)
+      // console.log('encoding ' + window.byte_to_code)
+      // bob.encode_range(window.byte_to_code)
 
 
       // console.log(ranges)
