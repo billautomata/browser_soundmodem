@@ -15,7 +15,10 @@ module.exports = function (grunt) {
           'public/build/bundle.js': ['**/*.js'],
         },
         options: {
-          transform: ['brfs']
+          transform: ['brfs'],
+          browserifyOptions: {
+            debug: true
+          }
         }
       }
     },
