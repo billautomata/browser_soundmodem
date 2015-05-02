@@ -6,7 +6,7 @@ bob hears on SignalB and sends only on SignalA
 -- handshake complete
 
 alice encodes infobit channels
-alice sends on SignalA
+alice sends on SignalA                              alice signalA[t][r]
 alice now listens for bobs ack on SignalA
 bob hears on SignalA and reads info bits
 bob sends on SignalA to ack

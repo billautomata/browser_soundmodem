@@ -1,6 +1,4 @@
-# javascript computer vision https livereload + browserify
-
-run `npm install` to install express
+run `npm install` to install deps
 
 then `npm run create_keys` to create the `.key` and `.cert` file
 
