@@ -3,6 +3,9 @@ window.onload = function () {
 
   console.log('main.js / window.onload anonymous function')
 
+  var message_to_send = '<3 Lindsey Bacon and the baby and skittie bees and mr d and yeah'
+  var message_idx = 0
+
 
   var Agent = require('./agent.js')
   // return;
@@ -63,83 +66,34 @@ window.onload = function () {
   function draw() {
 
     counter++
-    if(counter % 10 === 1){
+    if(counter % 30 === 1){
 
-      console.clear()
-      console.log(Date.now())
+      // console.clear()
+      // console.log(Date.now())
 
       alice.getBuffer()
       for(i=0;i<bufferLength;i++){
         bars[i].attr('height', dataArray[i])
       }
 
-      console.log('here')
+      if(alice.poll()){
 
-      // does the encoded byte match?
-      var current_signal_byte = alice.read_byte_from_signal()
-      console.log('current signal byte ' + current_signal_byte)
+        var alice_reads = alice.read_byte_from_signal()
 
-      // return true;
+        console.log('alice reads: ' + alice_reads)
+        console.log()
 
-      // if(current_signal_byte === window.byte_to_code){
-      //   window.byte_to_code += 1
-      //   console.log(window.byte_to_code)
-      //   window.byte_to_code = window.byte_to_code % 255
-      // } else {
-      //   console.log('too slow!')
-      // }
+        document.write(String.fromCharCode(alice_reads))
 
+        window.byte_to_code = message_to_send[message_idx].charCodeAt(0)
+        message_idx += 1
+        message_idx = message_idx % message_to_send.length
 
-      // var ranges = alice.validate_ranges()
-      // var test_byte = alice.get_encoded_byte_array(window.byte_to_code)
-      //
-      // var no_misses = true
-      // for(var i = 0; i < 8; i++){
-      //   if((ranges[i] === true && test_byte[i] === '1') ||
-      //     (ranges[i] === false && test_byte[i] === '0')){
-      //       // do nothing
-      //     } else {
-      //       no_misses = false
-      //       console.log('miss')
-      //     }
-      //
-      //
-      // }
-      //
-      // if(no_misses){
-      // }
+        bob.encode_range(window.byte_to_code)
 
-
-      // console.log('encoding ' + window.byte_to_code)
-      // bob.encode_range(window.byte_to_code)
-
-
-      // console.log(ranges)
-      // if(ranges[channel_to_check] === false){
-      //   channel_to_check += 1
-      //   channel_to_check = channel_to_check % alice.n_channels()
-      // }
-      //
-      // for(var i = 0; i < alice.n_channels(); i++){
-      //   if(i === channel_to_check){
-      //     // console.log('here'+i)
-      //     alice.set_gain(i,0.0)
-      //   } else {
-      //     alice.set_gain(i,1.0/alice.n_channels())
-      //   }
-      // }
-      //
-      // var all_matched = true
-      // ranges.forEach(function(v,i){
-      //   if(v !== prev_ranges[i]){
-      //     all_matched = false
-      //   }
-      // })
-      // if(all_matched){
-      //   console.log('MISS')
-      // }
-      //
-      // prev_ranges = ranges
+      } else {
+        console.log('miss')
+      }
 
     }
 

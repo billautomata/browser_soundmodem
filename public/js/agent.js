@@ -27,16 +27,51 @@ function agent(){
 
   var flip_flop = true
 
+  var prev_high_channel = -1
+  var current_high_channel = 0
+  var fresh_data = false
+
   var osc_bank = []
   var gain_bank = []
 
   var n_osc = 10
-  var freqRange = 17000
+  var freqRange = 5000
   var spread = (freqRange / n_osc)
-  var initialFreq = 1000
+  var initialFreq = 200
 
   // init()
   // getBuffer()
+
+  function poll(){
+
+    var valid_ranges = validate_ranges()
+    // console.log(valid_ranges)
+
+    if(prev_high_channel !== -1){
+      prev_high_channel = current_high_channel
+    }
+
+
+    if(valid_ranges[8] === true && valid_ranges[9] === false){
+      current_high_channel = 8
+    } else {
+      current_high_channel = 9
+    }
+
+    // console.log(current_high_channel, prev_high_channel)
+
+    if(current_high_channel !== prev_high_channel){
+      fresh_data = true
+    }
+
+    if(fresh_data){
+      // console.log('found fresh data')
+      // console.log(read_byte_from_signal())
+    }
+
+    return fresh_data
+
+  }
 
   function init(name){
 
@@ -52,7 +87,7 @@ function agent(){
       local_osc.connect(local_gain)
 
       // local_gain.connect(analyser)
-      // local_gain.connect(context.destination)
+      local_gain.connect(context.destination)
 
       local_osc.start()
 
@@ -108,6 +143,8 @@ function agent(){
   }
 
   function register_peak_ranges(){
+
+    console.log('registering peak ranges')
 
     getBuffer()
     console.log(analyserDataArray)
@@ -285,6 +322,8 @@ function agent(){
       }
     }
 
+    fresh_data = false
+
     return parseInt(binary_string,2)
 
   }
@@ -311,7 +350,9 @@ function agent(){
     get_groups: get_groups,
     encode_range: encode_byte,
     get_encoded_byte_array: get_encoded_byte_array,
-    read_byte_from_signal: read_byte_from_signal
+    read_byte_from_signal: read_byte_from_signal,
+    poll: poll
+
   }
 
   return k
