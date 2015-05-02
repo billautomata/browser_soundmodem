@@ -35,24 +35,18 @@ function agent(){
   var gain_bank = []
 
   var n_osc = 10
-  var freqRange = 5000
+  var freqRange = 20000
   var spread = (freqRange / n_osc)
   var initialFreq = 200
 
-  // init()
-  // getBuffer()
 
   function poll(){
 
     var valid_ranges = validate_ranges()
     // console.log(valid_ranges)
 
-    if(prev_high_channel !== -1){
-      prev_high_channel = current_high_channel
-    }
-
-
     if(valid_ranges[8] === true && valid_ranges[9] === false){
+      // console.log('here')
       current_high_channel = 8
     } else {
       current_high_channel = 9
@@ -64,10 +58,7 @@ function agent(){
       fresh_data = true
     }
 
-    if(fresh_data){
-      // console.log('found fresh data')
-      // console.log(read_byte_from_signal())
-    }
+    prev_high_channel = current_high_channel
 
     return fresh_data
 
@@ -87,7 +78,7 @@ function agent(){
       local_osc.connect(local_gain)
 
       // local_gain.connect(analyser)
-      local_gain.connect(context.destination)
+      // local_gain.connect(context.destination)
 
       local_osc.start()
 
@@ -104,19 +95,20 @@ function agent(){
 
   }
 
-  function connect(other_agent){
+  function connect(other_agent, callback){
 
     var other_gain_bank = other_agent.get_gain_bank()
-    // console.log(other_analyser)
 
     other_gain_bank.forEach(function(gainNode){
-      // console.log(gainNode)
       gainNode.connect(analyser)
     })
 
     getBuffer()
 
-    setTimeout(register_peak_ranges,200)
+    setTimeout(function(){
+      register_peak_ranges()
+      callback()
+    },100)
 
   }
 
@@ -310,8 +302,6 @@ function agent(){
   function read_byte_from_signal(){
 
     var ranges = validate_ranges()
-
-    console.log(ranges)
 
     var binary_string = ''
     for(var i = 0; i < 8; i++){
