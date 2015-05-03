@@ -1,16 +1,8 @@
 ##todo
 
-- [ ] hardcode peak ranges
-- [x] better initial handshake
-- [ ] real benchmarking
-- [ ] get it off the request animation frame cycle
-- [x] TCP mode / UDP mode
-
-
 #JSAM protocol spec
 
 the modem as a state machine with the following states:
-
 
 ```
 id:     -1
@@ -21,10 +13,7 @@ description:
   create gains
   connect peer gains to internal analyser
 
-
 ```
-
-
 
 ```
 id:     0
@@ -136,7 +125,6 @@ each_tick:
   get/set the CURRENT_BYTE from the MESSAGE with the MESSAGE_IDX
   encode the CURRENT_BYTE into ch0 - ch8
 
-
   // [looks for signaling]
   reads the state of ch9 and ch10 [bool,bool]
   if ch9 and ch10 are different {
@@ -159,6 +147,6 @@ each_tick:
   }
 
 next_state:
-  if(SYNC_COUNTS === 2) GOTO STATE 2
+  none
 
 ```

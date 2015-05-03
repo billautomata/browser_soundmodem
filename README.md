@@ -1,4 +1,4 @@
-### look in public/js/TODO.md for more information
+### look in public/TODO.md for more information
 
 run `npm install` to install deps
 
