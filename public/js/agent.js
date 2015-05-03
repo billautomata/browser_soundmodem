@@ -3,10 +3,10 @@
 module.exports.agent = agent
 
 
-function agent(opts){
+function agent(opts) {
 
-  (function setup_audio_context(){
-    if(window.context === undefined){
+  (function setup_audio_context() {
+    if (window.context === undefined) {
       console.log('creating new window.AudioContext()')
       window.context = new window.AudioContext()
     }
@@ -15,22 +15,23 @@ function agent(opts){
 
   var MESSAGE
   var MESSAGE_IDX = 0
+  var RX_BUFFER = ''
+  var CONNECTED_AT
 
   var type
 
   var analyser = context.createAnalyser()
-  var analyserDataArray   // the buffer the analyser writes to
-  var bufferLength        // the length of the analyserDataArray
+  var analyserDataArray // the buffer the analyser writes to
+  var bufferLength // the length of the analyserDataArray
 
-  var peak_ranges           // flat list of indexes of detected peak ranges
-  var grouped_peak_ranges   // clustered groups of peak ranges
-  var mean                  // the threshold for determining if a band is peaked
+  var peak_ranges // flat list of indexes of detected peak ranges
+  var grouped_peak_ranges // clustered groups of peak ranges
+  var mean // the threshold for determining if a band is peaked
 
   var flip_flop = true
 
   var prev_high_channel = -1
   var current_high_channel = 0
-  var fresh_data = false
   var SYNC_COUNT = 0
 
   var osc_bank = []
@@ -43,63 +44,63 @@ function agent(opts){
 
   var CURRENT_STATE = -1
 
-  function tick(){
+  function tick() {
 
     var ret_obj = {
       new_data: false,
       data: ''
     }
 
-    // console.log('tick')
-    // console.log(CURRENT_STATE.toString())
+    if (CURRENT_STATE < 0) {
 
-    if(CURRENT_STATE < 0){
+      // performing initialization process, do nothing
       return;
+
     } else {
 
-      if(CURRENT_STATE === 0){
+      if (CURRENT_STATE === 0) {
 
         register_peak_ranges()
 
-        if(grouped_peak_ranges.length === 10){
+        if (grouped_peak_ranges.length === 10) {
           CURRENT_STATE = 1
         }
 
-      } else if(CURRENT_STATE === 1){
+      } else if (CURRENT_STATE === 1) {
 
         perform_signaling()
         look_for_signaling()
 
-        if(SYNC_COUNT > 5){
+        if (SYNC_COUNT > 2) {
           CURRENT_STATE = 2
+          CONNECTED_AT = Date.now()
         }
 
-      } else if(CURRENT_STATE === 2){
+      } else if (CURRENT_STATE === 2) {
 
-        if(look_for_signaling()){
+        // encode byte
+        var byte_to_send = MESSAGE[MESSAGE_IDX].charCodeAt(0)
+        encode_byte(byte_to_send)
+
+        if (look_for_signaling()) {
 
           // read byte
-          if(type === 'client'){
+          RX_BUFFER += String.fromCharCode(read_byte_from_signal())
 
+          if (type === 'client') {
             ret_obj.new_data = true
             ret_obj.data = String.fromCharCode(read_byte_from_signal())
-
-            // console.log(String.fromCharCode(read_byte_from_signal()))
           }
 
           // increment byte to encode
           MESSAGE_IDX += 1
           MESSAGE_IDX = MESSAGE_IDX % MESSAGE.length
 
-
           perform_signaling()
 
         }
-        // encode byte
-        var byte_to_send = MESSAGE[MESSAGE_IDX].charCodeAt(0)
-        encode_byte(byte_to_send)
 
-      }
+      } // end of CURRENT_STATE === 2
 
     }
 
@@ -108,10 +109,10 @@ function agent(opts){
   }
 
 
-  function look_for_signaling(){
+  function look_for_signaling() {
 
     var valid_ranges = validate_ranges()
-    if(valid_ranges[8] === true && valid_ranges[9] === false){
+    if (valid_ranges[8] === true && valid_ranges[9] === false) {
       current_high_channel = 8
     } else {
       current_high_channel = 9
@@ -119,7 +120,7 @@ function agent(opts){
 
     var difference_found = false
 
-    if(current_high_channel !== prev_high_channel){
+    if (current_high_channel !== prev_high_channel) {
       difference_found = true
       SYNC_COUNT += 1
     }
@@ -130,13 +131,13 @@ function agent(opts){
 
   }
 
-  function init(opts){
+  function init(opts) {
 
     MESSAGE = opts.message
     type = opts.type
 
     // create osc + gain banks
-    for(var idx = 0; idx < n_osc; idx++){
+    for (var idx = 0; idx < n_osc; idx++) {
 
       let local_osc = context.createOscillator()
       local_osc.frequency.value = (idx * spread) + initialFreq
@@ -166,52 +167,63 @@ function agent(opts){
 
   }
 
-  function connect(other_agent){
+  function connect(other_agent) {
 
     var other_gain_bank = other_agent.get_gain_bank()
 
-    other_gain_bank.forEach(function(gainNode){
+    other_gain_bank.forEach(function (gainNode) {
       gainNode.connect(analyser)
     })
 
     getBuffer()
 
-    setTimeout(function(){
-      console.log('yep')
+    setTimeout(function () {
+      console.log('done connecting')
       CURRENT_STATE = 0
-    },200)
-
-
-
-    // setTimeout(function(){
-    //   register_peak_ranges()
-    //   callback()
-    // },100)
+    }, 200)
 
   }
 
-  function n_channels(){
+  function n_channels() {
     return n_osc
   }
 
-  function get_groups(){
+  function get_groups() {
     return grouped_peak_ranges
   }
 
-  function getBuffer(){
+  function getBuffer() {
     analyser.getByteFrequencyData(analyserDataArray)
     return analyserDataArray
   }
 
-  function get_gain_bank(){
+  function get_gain_bank() {
     return gain_bank
   }
 
-  function get_analyser(){
+  function get_analyser() {
     return analyser
   }
 
-  function register_peak_ranges(){
+
+  function read_byte_from_signal() {
+
+    var ranges = validate_ranges()
+
+    var binary_string = ''
+    for (var i = 0; i < 8; i++) {
+      if (ranges[i]) {
+        binary_string += '1'
+      } else {
+        binary_string += '0'
+      }
+    }
+
+    return parseInt(binary_string, 2)
+
+  }
+
+  function register_peak_ranges() {
 
     console.log('registering peak ranges')
 
@@ -220,22 +232,22 @@ function agent(opts){
 
     // push on to new array for sorting
     var d = []
-    for(var i = 0; i < bufferLength; i++){
-      if(analyserDataArray[i] > 0){
+    for (var i = 0; i < bufferLength; i++) {
+      if (analyserDataArray[i] > 0) {
         d.push(analyserDataArray[i])
       }
     }
-    d.sort(function(a,b){
-      return a-b
+    d.sort(function (a, b) {
+      return a - b
     })
-    console.log('Mean: '+d[Math.floor(d.length/2)])
+    console.log('Mean: ' + d[Math.floor(d.length / 2)])
 
-    mean = d[Math.floor(d.length/2)]
+    mean = d[Math.floor(d.length / 2)]
 
     //
     peak_ranges = []
-    for(var i = 0; i < bufferLength; i++){
-      if(analyserDataArray[i] > mean){
+    for (var i = 0; i < bufferLength; i++) {
+      if (analyserDataArray[i] > mean) {
         peak_ranges.push(i)
       }
     }
@@ -246,13 +258,13 @@ function agent(opts){
 
   }
 
-  function check_peak_ranges(){
+  function check_peak_ranges() {
 
     getBuffer()
 
     var hits = []
-    peak_ranges.forEach(function(dataArray_idx){
-      if(analyserDataArray[dataArray_idx] > mean){
+    peak_ranges.forEach(function (dataArray_idx) {
+      if (analyserDataArray[dataArray_idx] > mean) {
         hits.push(true)
       } else {
         hits.push(false)
@@ -263,9 +275,9 @@ function agent(opts){
 
   }
 
-  function group_peak_ranges(){
+  function group_peak_ranges() {
 
-    if(peak_ranges === undefined || peak_ranges.length === 0){
+    if (peak_ranges === undefined || peak_ranges.length === 0) {
       return;
     }
 
@@ -275,7 +287,7 @@ function agent(opts){
 
     var local_group = new Array()
 
-    peak_ranges.forEach(function(peak_idx, idx){
+    peak_ranges.forEach(function (peak_idx, idx) {
 
       // if the Math.abs(peak_idx - peak_ranges[idx+1]) === 1
       //    push peak_idx on to local_group
@@ -284,12 +296,12 @@ function agent(opts){
       //    clear local_group
       //    push peak_idx on to local_group
 
-      if(idx === peak_ranges.length-1){
+      if (idx === peak_ranges.length - 1) {
         // console.log('here')
         return;
       }
 
-      if(Math.abs(peak_idx - peak_ranges[idx+1]) <= 2){
+      if (Math.abs(peak_idx - peak_ranges[idx + 1]) <= 2) {
         local_group.push(peak_idx)
       } else {
         local_group.push(peak_idx)
@@ -307,13 +319,13 @@ function agent(opts){
 
   }
 
-  function set_gain(channel, value){
+  function set_gain(channel, value) {
     gain_bank[channel].gain.value = value
   }
 
-  function validate_ranges(){
+  function validate_ranges() {
 
-    if(grouped_peak_ranges === undefined){
+    if (grouped_peak_ranges === undefined) {
       return;
     }
 
@@ -321,20 +333,17 @@ function agent(opts){
 
     var valid_groups = []
 
-    grouped_peak_ranges.forEach(function(group){
+    grouped_peak_ranges.forEach(function (group) {
 
-      // for each entry in the group
       var hits = 0
 
-      group.forEach(function(idx){
-        if(analyserDataArray[idx] >= mean){
+      group.forEach(function (idx) {
+        if (analyserDataArray[idx] >= mean) {
           hits += 1
         }
       })
 
-      // console.log(hits)
-
-      if(hits >= group.length/2){
+      if (hits >= group.length / 2) {
         valid_groups.push(true)
       } else {
         valid_groups.push(false)
@@ -346,56 +355,36 @@ function agent(opts){
 
   }
 
-  function encode_byte(byte){
+  function encode_byte(byte) {
 
     var chars = get_encoded_byte_array(byte)
 
     // console.log(chars)
 
-    chars.forEach(function(c,idx){
-      if(c === '0'){
-        set_gain(idx,0)
+    chars.forEach(function (c, idx) {
+      if (c === '0') {
+        set_gain(idx, 0)
       } else {
-        set_gain(idx,1/n_osc)
+        set_gain(idx, 1 / n_osc)
       }
     })
 
   }
 
-  function perform_signaling(){
+  function perform_signaling() {
     flip_flop = !flip_flop
-    if(flip_flop){
-      set_gain(8,1/n_osc)
-      set_gain(9,0)
+    if (flip_flop) {
+      set_gain(8, 1 / n_osc)
+      set_gain(9, 0)
     } else {
-      set_gain(9,1/n_osc)
-      set_gain(8,0)
+      set_gain(9, 1 / n_osc)
+      set_gain(8, 0)
     }
   }
 
-  function get_encoded_byte_array(byte){
-    return pad(byte.toString(2),8).split('')
+  function get_encoded_byte_array(byte) {
+    return pad(byte.toString(2), 8).split('')
   }
-
-  function read_byte_from_signal(){
-
-    var ranges = validate_ranges()
-
-    var binary_string = ''
-    for(var i = 0; i < 8; i++){
-      if(ranges[i]){
-        binary_string += '1'
-      } else {
-        binary_string += '0'
-      }
-    }
-
-    fresh_data = false
-
-    return parseInt(binary_string,2)
-
-  }
-
 
   function pad(n, width, z) {
     z = z || '0';
@@ -403,25 +392,35 @@ function agent(opts){
     return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
   }
 
-
-  var k = {
-    init: init,
-    connect: connect,
-    get_gain_bank: get_gain_bank,
-    get_analyser: get_analyser,
-    getBuffer: getBuffer,
-    check_peak_ranges: check_peak_ranges,
-    group_peak_ranges: group_peak_ranges,
-    set_gain: set_gain,
-    validate_ranges: validate_ranges,
-    n_channels: n_channels,
-    get_groups: get_groups,
-    encode_range: encode_byte,
-    get_encoded_byte_array: get_encoded_byte_array,
-    read_byte_from_signal: read_byte_from_signal,
-    tick: tick
+  function get_state() {
+    return {
+      buffer: getBuffer(),
+      RX_BUFFER: RX_BUFFER,
+      CURRENT_STATE: CURRENT_STATE,
+      SYNC_COUNT: SYNC_COUNT,
+      MESSAGE: MESSAGE,
+      MESSAGE_IDX: MESSAGE_IDX,
+      CONNECTED_AT: CONNECTED_AT
+    }
   }
 
-  return k
+  return {
+    check_peak_ranges: check_peak_ranges,
+    connect: connect,
+    encode_range: encode_byte,
+    getBuffer: getBuffer,
+    get_analyser: get_analyser,
+    get_encoded_byte_array: get_encoded_byte_array,
+    get_gain_bank: get_gain_bank,
+    get_groups: get_groups,
+    get_state: get_state,
+    group_peak_ranges: group_peak_ranges,
+    init: init,
+    n_channels: n_channels,
+    set_gain: set_gain,
+    read_byte_from_signal: read_byte_from_signal,
+    tick: tick,
+    validate_ranges: validate_ranges,
+  };
 
 }

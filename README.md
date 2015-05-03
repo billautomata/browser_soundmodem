@@ -1,3 +1,5 @@
+### look in public/js/TODO.md for more information
+
 run `npm install` to install deps
 
 then `npm run create_keys` to create the `.key` and `.cert` file
