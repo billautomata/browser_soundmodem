@@ -3,68 +3,127 @@
 module.exports.agent = agent
 
 
-function agent(){
+function agent(opts){
 
-  // check for global audio ctx
-  // var context
+  (function setup_audio_context(){
+    if(window.context === undefined){
+      console.log('creating new window.AudioContext()')
+      window.context = new window.AudioContext()
+    }
+    console.log('done.')
+  })()
 
-  if(window.context === undefined){
-    console.log('creating new window.AudioContext()')
-    window.context = new window.AudioContext()
-    // var context = new window.AudioContext()
-  } else {
-    // context = window.context
-  }
+  var MESSAGE
+  var MESSAGE_IDX = 0
+
+  var type
 
   var analyser = context.createAnalyser()
-  // var local_analyser = window.context.createAnalyser()
-  var analyserDataArray
-  var bufferLength
+  var analyserDataArray   // the buffer the analyser writes to
+  var bufferLength        // the length of the analyserDataArray
 
-  var peak_ranges
-  var mean
-  var grouped_peak_ranges
+  var peak_ranges           // flat list of indexes of detected peak ranges
+  var grouped_peak_ranges   // clustered groups of peak ranges
+  var mean                  // the threshold for determining if a band is peaked
 
   var flip_flop = true
 
   var prev_high_channel = -1
   var current_high_channel = 0
   var fresh_data = false
+  var SYNC_COUNT = 0
 
   var osc_bank = []
   var gain_bank = []
 
   var n_osc = 10
-  var freqRange = 20000
+  var freqRange = 2500
   var spread = (freqRange / n_osc)
   var initialFreq = 200
 
+  var CURRENT_STATE = -1
 
-  function poll(){
+  function tick(){
+
+    // console.log('tick')
+    // console.log(CURRENT_STATE.toString())
+
+    if(CURRENT_STATE < 0){
+      return;
+    } else {
+
+      if(CURRENT_STATE === 0){
+
+        register_peak_ranges()
+
+        if(grouped_peak_ranges.length === 10){
+          CURRENT_STATE = 1
+        }
+
+
+      } else if(CURRENT_STATE === 1){
+
+        perform_signaling()
+        look_for_signaling()
+
+        if(SYNC_COUNT > 5){
+          CURRENT_STATE = 2
+        }
+
+      } else if(CURRENT_STATE === 2){
+
+        if(look_for_signaling()){
+
+          // read byte
+          if(type === 'client'){
+            console.log(String.fromCharCode(read_byte_from_signal()))
+          }
+
+          // increment byte to encode
+          MESSAGE_IDX += 1
+          MESSAGE_IDX = MESSAGE_IDX % MESSAGE.length
+
+
+          perform_signaling()
+
+        }
+        // encode byte
+        var byte_to_send = MESSAGE[MESSAGE_IDX].charCodeAt(0)
+        encode_byte(byte_to_send)
+
+      }
+
+    }
+
+  }
+
+
+  function look_for_signaling(){
 
     var valid_ranges = validate_ranges()
-    // console.log(valid_ranges)
-
     if(valid_ranges[8] === true && valid_ranges[9] === false){
-      // console.log('here')
       current_high_channel = 8
     } else {
       current_high_channel = 9
     }
 
-    // console.log(current_high_channel, prev_high_channel)
+    var difference_found = false
 
     if(current_high_channel !== prev_high_channel){
-      fresh_data = true
+      difference_found = true
+      SYNC_COUNT += 1
     }
 
     prev_high_channel = current_high_channel
 
-    return fresh_data
+    return difference_found
 
   }
 
-  function init(name){
+  function init(opts){
+
+    MESSAGE = opts.message
+    type = opts.type
 
     // create osc + gain banks
     for(var idx = 0; idx < n_osc; idx++){
@@ -78,7 +137,7 @@ function agent(){
       local_osc.connect(local_gain)
 
       // local_gain.connect(analyser)
-      // local_gain.connect(context.destination)
+      local_gain.connect(context.destination)
 
       local_osc.start()
 
@@ -87,15 +146,17 @@ function agent(){
 
     }
 
-    analyser.name = name
+    // analyser.name = name
     analyser.fftSize = 1024
     analyser.smoothingTimeConstant = 0
     bufferLength = analyser.frequencyBinCount
     analyserDataArray = new Uint8Array(bufferLength)
 
+
+
   }
 
-  function connect(other_agent, callback){
+  function connect(other_agent){
 
     var other_gain_bank = other_agent.get_gain_bank()
 
@@ -106,12 +167,18 @@ function agent(){
     getBuffer()
 
     setTimeout(function(){
-      register_peak_ranges()
-      callback()
-    },100)
+      console.log('yep')
+      CURRENT_STATE = 0
+    },200)
+
+
+
+    // setTimeout(function(){
+    //   register_peak_ranges()
+    //   callback()
+    // },100)
 
   }
-
 
   function n_channels(){
     return n_osc
@@ -231,7 +298,6 @@ function agent(){
   }
 
   function set_gain(channel, value){
-    // channel = (n_osc-1) - channel
     gain_bank[channel].gain.value = value
   }
 
@@ -284,6 +350,9 @@ function agent(){
       }
     })
 
+  }
+
+  function perform_signaling(){
     flip_flop = !flip_flop
     if(flip_flop){
       set_gain(8,1/n_osc)
@@ -292,7 +361,6 @@ function agent(){
       set_gain(9,1/n_osc)
       set_gain(8,0)
     }
-
   }
 
   function get_encoded_byte_array(byte){
@@ -341,8 +409,7 @@ function agent(){
     encode_range: encode_byte,
     get_encoded_byte_array: get_encoded_byte_array,
     read_byte_from_signal: read_byte_from_signal,
-    poll: poll
-
+    tick: tick
   }
 
   return k

@@ -13,13 +13,20 @@ window.onload = function () {
   var Agent = require('./agent.js')
 
   window.alice = Agent.agent()
-  alice.init('alice')
+  alice.init({
+    type: 'client',
+    message: 'ffff'
+  })
 
   window.bob = Agent.agent()
-  bob.init('bob')
+  bob.init({
+    type: 'server',
+    message: 'testing that the mod / demod works just fine '
+  })
 
   var dataArray = alice.getBuffer()
-  var bufferLength = dataArray.length
+  // var bufferLength = dataArray.length
+  var bufferLength = 512
 
   var WIDTH = 1024
   var HEIGHT = 256
@@ -58,53 +65,57 @@ window.onload = function () {
 
   var prev_ranges = []
 
-  alice.connect(bob, function(){
-    bob.connect(alice, start)
-  })
+  alice.connect(bob)
+  bob.connect(alice)
 
-  function start(){
-    alice.encode_range(22)
-    draw()
-  }
+
+  setTimeout(draw,200)
+  // function start(){
+  //   alice.encode_range(22)
+  //   draw()
+  // }
 
   function draw() {
 
     counter++
-    if(counter % 3 === 0){
+    if(counter % 2 === 0){
 
-      // console.clear()
-      // console.log(Date.now())
+      // visualize alices buffer data
+      dataArray = alice.getBuffer()
 
-      alice.getBuffer()
       for(i=0;i<bufferLength;i++){
         bars[i].attr('height', dataArray[i])
       }
 
-      if(bob.poll() || udp_mode){
+      alice.tick()
+      bob.tick()
 
-        bob.read_byte_from_signal()
-        window.byte_to_code = message_to_send[message_idx].charCodeAt(0)
-        bob.encode_range(window.byte_to_code)
-        message_idx += 1
-        message_idx = message_idx % message_to_send.length
 
-      } else {
-        // console.log('bob miss')
-      }
-
-      if(alice.poll()){
-
-        var alice_reads = alice.read_byte_from_signal()
-
-        output_msg += String.fromCharCode(alice_reads)
-
-        d3.select('div.output_msg').html(output_msg)
-
-        alice.encode_range(2)
-
-      } else {
-        // console.log('alice miss')
-      }
+      // if(bob.poll() || udp_mode){
+      //
+      //   bob.read_byte_from_signal()
+      //   window.byte_to_code = message_to_send[message_idx].charCodeAt(0)
+      //   bob.encode_range(window.byte_to_code)
+      //   message_idx += 1
+      //   message_idx = message_idx % message_to_send.length
+      //
+      // } else {
+      //   // console.log('bob miss')
+      // }
+      //
+      // if(alice.poll()){
+      //
+      //   var alice_reads = alice.read_byte_from_signal()
+      //
+      //   output_msg += String.fromCharCode(alice_reads)
+      //
+      //   d3.select('div.output_msg').html(output_msg)
+      //
+      //   alice.encode_range(2)
+      //
+      // } else {
+      //   // console.log('alice miss')
+      // }
 
     }
 
