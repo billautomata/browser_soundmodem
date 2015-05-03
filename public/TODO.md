@@ -1,5 +1,7 @@
 ##todo
 
+- [ ] automatic timeout/reconnect
+
 #JSAM protocol spec
 
 the modem as a state machine with the following states:

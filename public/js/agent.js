@@ -24,6 +24,9 @@ function agent(opts) {
   var analyserDataArray // the buffer the analyser writes to
   var bufferLength // the length of the analyserDataArray
 
+  var localAnalyser = context.createAnalyser()
+  var localAnalyserDataArray // the buffer the analyser writes to
+
   var peak_ranges // flat list of indexes of detected peak ranges
   var grouped_peak_ranges // clustered groups of peak ranges
   var mean // the threshold for determining if a band is peaked
@@ -147,8 +150,8 @@ function agent(opts) {
 
       local_osc.connect(local_gain)
 
-      // local_gain.connect(analyser)
-      local_gain.connect(context.destination)
+      local_gain.connect(localAnalyser)
+      // local_gain.connect(context.destination)
 
       local_osc.start()
 
@@ -157,13 +160,14 @@ function agent(opts) {
 
     }
 
-    // analyser.name = name
     analyser.fftSize = 1024
     analyser.smoothingTimeConstant = 0
     bufferLength = analyser.frequencyBinCount
     analyserDataArray = new Uint8Array(bufferLength)
 
-
+    localAnalyser.fftSize = 1024
+    localAnalyser.smoothingTimeConstant = 0
+    localAnalyserDataArray = new Uint8Array(bufferLength)
 
   }
 
@@ -184,6 +188,11 @@ function agent(opts) {
 
   }
 
+  function set_message(msg){
+    MESSAGE = msg
+    MESSAGE_IDX = 0
+  }
+
   function n_channels() {
     return n_osc
   }
@@ -195,6 +204,10 @@ function agent(opts) {
   function getBuffer() {
     analyser.getByteFrequencyData(analyserDataArray)
     return analyserDataArray
+  }
+  function get_local_frequency_data_buffer() {
+    localAnalyser.getByteFrequencyData(localAnalyserDataArray)
+    return localAnalyserDataArray
   }
 
   function get_gain_bank() {
@@ -395,6 +408,7 @@ function agent(opts) {
   function get_state() {
     return {
       buffer: getBuffer(),
+      local_buffer: get_local_frequency_data_buffer(),
       RX_BUFFER: RX_BUFFER,
       CURRENT_STATE: CURRENT_STATE,
       SYNC_COUNT: SYNC_COUNT,
@@ -413,11 +427,13 @@ function agent(opts) {
     get_encoded_byte_array: get_encoded_byte_array,
     get_gain_bank: get_gain_bank,
     get_groups: get_groups,
+    get_local_frequency_data_buffer: get_local_frequency_data_buffer,
     get_state: get_state,
     group_peak_ranges: group_peak_ranges,
     init: init,
     n_channels: n_channels,
     set_gain: set_gain,
+    set_message: set_message,
     read_byte_from_signal: read_byte_from_signal,
     tick: tick,
     validate_ranges: validate_ranges,

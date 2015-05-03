@@ -1,0 +1,12 @@
+body {
+  background-color: rgb(244,244,244);
+}
+
+.sync_count {
+  font-size: 14px;
+  font-family: Helvetica;
+}
+
+.rx_buffer {
+  height: 400px;
+}

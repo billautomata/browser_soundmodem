@@ -9,6 +9,7 @@ window.onload = function () {
   var output_msg = ''
 
   var Agent = require('./agent.js')
+  var View_Controller = require('./view_controller.js')
 
   window.alice = Agent.agent()
   alice.init({
@@ -22,118 +23,57 @@ window.onload = function () {
     message: message_to_send
   })
 
+  var display = View_Controller.view_controller('alice_modem')
+  display.connect(alice)
+
   var dataArray = alice.getBuffer()
-  // var bufferLength = dataArray.length
+    // var bufferLength = dataArray.length
   var bufferLength = 512
 
-  var WIDTH = 1024
-  var HEIGHT = 256
 
-  var barWidth = (WIDTH / bufferLength);
-
-  var barHeight
-  var x = 0
-  var mod = 0.0
-  var counter = 0
-  var i
 
   window.byte_to_code = 0
 
-  // create svg
-  var svg = d3.select('div#container').append('svg')
-    .attr('width',WIDTH)
-    .attr('height', HEIGHT)
-    .style('background-color', 'rgba(0,0,0,0.1)')
 
-  var bars = []
-  for(var svgbars = 0; svgbars < bufferLength; svgbars++){
-    var bar = svg.append('rect')
-      .attr('x', barWidth * svgbars)
-      .attr('y', 0)
-      .attr('width', barWidth)
-      .attr('height', 0)
-
-    let bar_idx = svgbars
-    bar.on('mouseover', function(){
-      console.log(bar_idx)
-    })
-
-    bars.push(bar)
-  }
 
   var prev_ranges = []
 
   alice.connect(bob)
   bob.connect(alice)
 
-
   // create alice modem elements
-  var div_alice_parent = d3.select('div#alice_modem')
+  // var div_alice_parent = d3.select('div#alice_modem')
+  //
+  // var div_state = div_alice_parent.append('div')
+  // var div_baud = div_alice_parent.append('div')
+  // var div_rx_buffer = div_alice_parent.append('pre')
 
-  var div_state = div_alice_parent.append('div')
-  var div_baud = div_alice_parent.append('div')
-  var div_rx_buffer = div_alice_parent.append('pre')
-
-  setTimeout(draw,200)
+  setTimeout(draw, 200)
 
   function draw() {
 
-    // counter++
-    // if(counter % 2 === 0){
+    var stats = alice.get_state()
 
-      var stats = alice.get_state()
+    // div_state.html('STATE: ' + stats.CURRENT_STATE)
+    // div_rx_buffer.html('RX BUF: ' + stats.RX_BUFFER)
+    //
+    // var baud = 8 * (stats.RX_BUFFER.length / ((Date.now() - stats.CONNECTED_AT) / 1000.0))
+    //
+    // div_baud.html('BAUD: ' + baud)
 
-      div_state.html('STATE: ' + stats.CURRENT_STATE)
-      div_rx_buffer.html('RX BUF: ' + stats.RX_BUFFER)
-
-
-      var baud = 8*(stats.RX_BUFFER.length / ((Date.now()-stats.CONNECTED_AT)/1000.0))
-
-      div_baud.html('BAUD: ' + baud)
-
-      dataArray = alice.getBuffer()
-
-      for(i=0;i<bufferLength;i++){
-        bars[i].attr('height', dataArray[i])
-      }
-
-      var o = alice.tick()
-
-      // if(o.new_data){
-      //   output_msg += o.data
-      //   d3.select('pre.output_msg').html(output_msg)
-      // }
-
-      bob.tick()
+    dataArray = alice.getBuffer()
 
 
-      // if(bob.poll() || udp_mode){
-      //
-      //   bob.read_byte_from_signal()
-      //   window.byte_to_code = message_to_send[message_idx].charCodeAt(0)
-      //   bob.encode_range(window.byte_to_code)
-      //   message_idx += 1
-      //   message_idx = message_idx % message_to_send.length
-      //
-      // } else {
-      //   // console.log('bob miss')
-      // }
-      //
-      // if(alice.poll()){
-      //
-      //   var alice_reads = alice.read_byte_from_signal()
-      //
-      //   output_msg += String.fromCharCode(alice_reads)
-      //
-      //   d3.select('div.output_msg').html(output_msg)
-      //
-      //   alice.encode_range(2)
-      //
-      // } else {
-      //   // console.log('alice miss')
-      // }
+    var o = alice.tick()
 
+    // if(o.new_data){
+    //   output_msg += o.data
+    //   d3.select('pre.output_msg').html(output_msg)
     // }
+
+    bob.tick()
+
+    display.tick()
 
     setTimeout(draw, 30)
 
