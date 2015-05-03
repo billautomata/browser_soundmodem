@@ -5,9 +5,7 @@ window.onload = function () {
 
   console.log('main.js / window.onload anonymous function')
 
-  var message_to_send = 'this is a test that the modulation / demodulation works correctly '
-  var message_idx = 0
-
+  var message_to_send = 'this is a test that the modulation / demodulation works correctly \nalso bumping the speed up to ~240 baud, this rules!! \n'
   var output_msg = ''
 
   var Agent = require('./agent.js')
@@ -21,7 +19,7 @@ window.onload = function () {
   window.bob = Agent.agent()
   bob.init({
     type: 'server',
-    message: 'testing that the mod / demod works just fine '
+    message: message_to_send
   })
 
   var dataArray = alice.getBuffer()
@@ -87,7 +85,13 @@ window.onload = function () {
         bars[i].attr('height', dataArray[i])
       }
 
-      alice.tick()
+      var o = alice.tick()
+
+      if(o.new_data){
+        output_msg += o.data
+        d3.select('pre.output_msg').html(output_msg)
+      }
+
       bob.tick()
 
 

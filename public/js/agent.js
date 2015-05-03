@@ -45,6 +45,11 @@ function agent(opts){
 
   function tick(){
 
+    var ret_obj = {
+      new_data: false,
+      data: ''
+    }
+
     // console.log('tick')
     // console.log(CURRENT_STATE.toString())
 
@@ -59,7 +64,6 @@ function agent(opts){
         if(grouped_peak_ranges.length === 10){
           CURRENT_STATE = 1
         }
-
 
       } else if(CURRENT_STATE === 1){
 
@@ -76,7 +80,11 @@ function agent(opts){
 
           // read byte
           if(type === 'client'){
-            console.log(String.fromCharCode(read_byte_from_signal()))
+
+            ret_obj.new_data = true
+            ret_obj.data = String.fromCharCode(read_byte_from_signal())
+
+            // console.log(String.fromCharCode(read_byte_from_signal()))
           }
 
           // increment byte to encode
@@ -94,6 +102,8 @@ function agent(opts){
       }
 
     }
+
+    return ret_obj
 
   }
 
