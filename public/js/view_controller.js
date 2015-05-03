@@ -4,6 +4,8 @@ function view_controller(div_id){
 
   "use strict";
 
+  var name = div_id
+
   var agent
   var parent = d3.select('div#'+div_id)
 
@@ -32,10 +34,14 @@ function view_controller(div_id){
   // create svg
   function setup_svg(){
 
+    var state = agent.get_state()
+
     WIDTH = bufferLength
     HEIGHT = WIDTH /4
 
     barWidth = (WIDTH / bufferLength)
+
+    parent.append('h1').attr('class','text-center').html(name)
 
     svg = parent.append('svg')
       .attr('class', 'img-responsive')
@@ -44,6 +50,16 @@ function view_controller(div_id){
       .attr('preserveAspectRatio', 'xMidYMid')
       .attr('viewBox', '0 0 ' + WIDTH + ' ' + HEIGHT)
       .style('background-color', 'rgba(0,0,0,0.1)')
+
+    svg.append('text')
+      .text('receiver spectrum')
+      .attr('x', WIDTH)
+      .attr('y', 12)
+      .attr('dx', '-4px')
+      .style('font-size', 12)
+      .style('text-anchor', 'end')
+      .attr('fill', 'rgba(0,0,0,0.1)')
+
 
     bars = []
     for (var svgbars = 0; svgbars < bufferLength; svgbars++) {
@@ -82,7 +98,26 @@ function view_controller(div_id){
     var div_rx_buffer_parent = parent.append('div')
       .attr('class', 'col-md-12')
 
+    div_rx_buffer_parent.append('h4').attr('class','text-left').html('rx buffer')
+
     div_rx_buffer = div_rx_buffer_parent.append('pre').attr('class', 'rx_buffer')
+
+    // message to send
+    var parent_message_to_send = parent.append('div').attr('class', 'col-md-12')
+
+    parent_message_to_send.append('div').attr('class','text-center').html('sending this message:')
+
+    var input_field = parent_message_to_send.append('input')
+      .attr('type', 'text')
+      .attr('class', 'msg_input')
+
+    input_field.node().value = state.MESSAGE
+
+    input_field.on('keyup', function(){
+      agent.set_message(input_field.node().value)
+    })
+
+    //
 
   }
 

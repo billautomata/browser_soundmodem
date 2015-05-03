@@ -10,3 +10,7 @@ body {
 .rx_buffer {
   height: 400px;
 }
+
+.msg_input {
+  width: 100%;
+}

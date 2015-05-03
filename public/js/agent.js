@@ -40,6 +40,8 @@ function agent(opts) {
   var osc_bank = []
   var gain_bank = []
 
+  var master_gain
+
   var n_osc = 10
   var freqRange = 2500
   var spread = (freqRange / n_osc)
@@ -136,6 +138,10 @@ function agent(opts) {
 
   function init(opts) {
 
+    master_gain = context.createGain()
+    master_gain.gain.value = 0
+    master_gain.connect(context.destination)
+
     MESSAGE = opts.message
     type = opts.type
 
@@ -151,6 +157,7 @@ function agent(opts) {
       local_osc.connect(local_gain)
 
       local_gain.connect(localAnalyser)
+      local_gain.connect(master_gain)
       // local_gain.connect(context.destination)
 
       local_osc.start()
@@ -336,6 +343,13 @@ function agent(opts) {
     gain_bank[channel].gain.value = value
   }
 
+  function set_volume(v){
+    if(v >= 1){
+      v=1.0
+    }
+    master_gain.gain.value = v
+  }
+
   function validate_ranges() {
 
     if (grouped_peak_ranges === undefined) {
@@ -434,6 +448,7 @@ function agent(opts) {
     n_channels: n_channels,
     set_gain: set_gain,
     set_message: set_message,
+    set_volume: set_volume,
     read_byte_from_signal: read_byte_from_signal,
     tick: tick,
     validate_ranges: validate_ranges,
